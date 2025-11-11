@@ -1,0 +1,162 @@
+{
+  "name": "stockpulse-ai",
+  "version": "1.0.0",
+  "description": "🚀 AI驱动的加密货币交易机器人 - 集成DeepSeek AI智能分析、实时数据监控和自动化交易信号生成",
+  "main": "main.js",
+  "homepage": "https://github.com/your-username/stockpulse.ai#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/stockpulse.ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/stockpulse.ai/issues"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --inspect=5858",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac", 
+    "build:linux": "electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/",
+    "clean": "rimraf dist build node_modules/.cache"
+  },
+  "keywords": [
+    "cryptocurrency",
+    "trading-bot",
+    "ai-analysis",
+    "deepseek-ai",
+    "technical-analysis",
+    "binance",
+    "okx",
+    "huobi",
+    "electron",
+    "nodejs",
+    "sqlite",
+    "ccxt",
+    "rsi",
+    "macd",
+    "bollinger-bands",
+    "trading-signals",
+    "crypto-analysis",
+    "automated-trading",
+    "market-analysis",
+    "desktop-app"
+  ],
+  "author": {
+    "name": "StockPulse.AI Team",
+    "email": "support@stockpulse.ai",
+    "url": "https://github.com/your-username"
+  },
+  "contributors": [
+    {
+      "name": "Your Name",
+      "email": "your.email@example.com",
+      "url": "https://github.com/your-username"
+    }
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "better-sqlite3": "^9.4.3",
+    "ccxt": "^4.2.90",
+    "dotenv": "^16.4.5",
+    "node-schedule": "^2.1.1",
+    "nodemailer": "^6.9.12",
+    "technicalindicators": "^3.1.0",
+    "winston": "^3.13.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "electron": "^29.1.4",
+    "electron-builder": "^24.13.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "os": [
+    "darwin",
+    "win32",
+    "linux"
+  ],
+  "build": {
+    "appId": "com.stockpulse.ai",
+    "productName": "StockPulse.AI",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README.*,bower.json,package.json,package-lock.json}",
+      "!**/node_modules/*/**/{test,__tests__,tests,powered-test,example,examples,*.d.ts}",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,user,bak,vcproj,sdf,gdb,ipch,dsk,build,lib,nupkg,ln,eslintignore,prettierignore}",
+      "!**/dist/builder-debug.yml",
+      "!**/dist/builder-effective-config.yaml",
+      "!**/dist/win-unpacked",
+      "!.env",
+      "!.env.*",
+      "!logs/",
+      "!db/",
+      "!*.log"
+    ],
+    "extraResources": [
+      {
+        "from": ".env.example",
+        "to": ".env.example"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.finance"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

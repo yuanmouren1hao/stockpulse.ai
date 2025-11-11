@@ -1,0 +1,287 @@
+# StockPulse.AI .gitignore
+
+# =============================================================================
+# 环境配置和敏感信息
+# =============================================================================
+.env
+.env.local
+.env.production
+.env.development
+*.key
+*.pem
+config/secrets.json
+
+# =============================================================================
+# Node.js 相关
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# =============================================================================
+# Electron 相关
+# =============================================================================
+dist/
+build/
+out/
+.webpack/
+
+# Electron builder output
+dist_electron/
+
+# =============================================================================
+# 数据库和日志文件
+# =============================================================================
+# SQLite 数据库文件
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+db/
+data/
+
+# 日志文件
+logs/
+*.log
+log/
+
+# =============================================================================
+# 操作系统相关
+# =============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# 编辑器和IDE
+# =============================================================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================================================
+# 临时文件和缓存
+# =============================================================================
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# =============================================================================
+# 测试相关
+# =============================================================================
+test-results/
+coverage/
+.nyc_output/
+
+# =============================================================================
+# 部署和构建相关
+# =============================================================================
+# Build outputs
+build/
+dist/
+out/
+
+# Deployment
+deploy/
+release/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# =============================================================================
+# 项目特定文件
+# =============================================================================
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 配置文件备份
+config/*.backup
+config/*.bak
+
+# 用户特定配置
+user-config.json
+local-config.json
+
+# 开发测试文件
+test-data/
+sandbox/
+playground/
+
+# 文档生成输出
+docs/build/
+docs/dist/
+
+# =============================================================================
+# 安全相关
+# =============================================================================
+# API密钥和证书
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# 加密文件
+*.enc
+*.encrypted
+
+# =============================================================================
+# 性能和监控
+# =============================================================================
+# 性能分析文件
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# 监控数据
+monitoring/
+metrics/
+
+# =============================================================================
+# 其他
+# =============================================================================
+# 锁文件 (保留 package-lock.json，但忽略其他)
+yarn.lock
+pnpm-lock.yaml
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env.test
+.env.production.local
+.env.local
+.env.development.local
+.env.test.local
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
