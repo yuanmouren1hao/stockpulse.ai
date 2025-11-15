@@ -6,6 +6,7 @@ const { IndicatorEngine } = require('./indicators/IndicatorEngine.js');
 const { DeepSeekClient } = require('./ai/DeepSeekClient.js');
 const { StrategyEngine } = require('./strategy/StrategyEngine.js');
 const { DatabaseManager } = require('./db/DatabaseManager.js');
+const { SupabaseManager } = require('./db/SupabaseManager.js');
 const { NotificationManager } = require('./notification/NotificationManager.js');
 const { logger } = require('./utils/logger.js');
 const { getConfig } = require('./utils/config.js');
@@ -24,12 +25,13 @@ class TradingBot {
         this.deepSeekClient = new DeepSeekClient();
         this.strategyEngine = new StrategyEngine();
         this.databaseManager = new DatabaseManager();
+        this.supabaseManager = new SupabaseManager(); // Supabase 云数据库
         this.notificationManager = new NotificationManager();
 
         this.scheduledJobs = {}; // 存储所有定时任务
         this.isBotRunning = false; // 机器人运行状态
-        this.monitoredSymbols = this.config.tradingPairs || ['BTC/USDT', 'ETH/USDT']; // 从配置中获取需要监控的交易对
-        this.klineInterval = KLINE_INTERVALS.TEN_MINUTES; // 10分钟K线周期
+        this.monitoredSymbols = ['BTC/USDT', 'ETH/USDT', 'DOGE/USDT']; // 监控的交易对
+        this.klineInterval = KLINE_INTERVALS.ONE_MINUTE; // 1分钟K线周期
         logger.info('TradingBot initialized with config:', this.config);
     }
 
@@ -46,18 +48,27 @@ class TradingBot {
 
         logger.info('Starting TradingBot...');
         try {
-            await this.databaseManager.initialize(); // 初始化数据库连接和表结构
-            logger.info('Database initialized successfully.');
+            // 初始化本地 SQLite 数据库
+            await this.databaseManager.initialize();
+            logger.info('SQLite Database initialized successfully.');
+
+            // 初始化 Supabase 云数据库
+            try {
+                await this.supabaseManager.initialize();
+                logger.info('Supabase initialized successfully.');
+            } catch (supabaseError) {
+                logger.warn('Supabase initialization failed, continuing with local SQLite only:', supabaseError.message);
+            }
 
             // 为每个交易对调度一个独立的定时任务
             this.monitoredSymbols.forEach(symbol => {
                 const jobName = `trading_job_${symbol}`;
-                // 每10分钟的第0秒执行一次任务
-                this.scheduledJobs[symbol] = schedule.scheduleJob(jobName, '0 */10 * * * *', async () => {
+                // 每1分钟的第0秒执行一次任务
+                this.scheduledJobs[symbol] = schedule.scheduleJob(jobName, '0 */1 * * * *', async () => {
                     logger.info(`Executing trading job for ${symbol} at ${new Date().toISOString()}`);
                     await this.executeTradingWorkflow(symbol);
                 });
-                logger.info(`Scheduled 10-minute trading job for symbol: ${symbol}`);
+                logger.info(`Scheduled 1-minute trading job for symbol: ${symbol}`);
             });
 
             this.isBotRunning = true;
@@ -134,13 +145,33 @@ class TradingBot {
                 return;
             }
             klineData = rawKlines[rawKlines.length - 1]; // 获取最新一根K线
-            await this.databaseManager.saveKlineData(symbol, this.klineInterval, rawKlines); // 批量保存K线数据
+            await this.databaseManager.saveKlineData(symbol, this.klineInterval, rawKlines); // 批量保存K线数据到本地
+            
+            // 同时保存到 Supabase 云数据库
+            if (this.supabaseManager.isReady()) {
+                try {
+                    await this.supabaseManager.saveKlineData(symbol, this.klineInterval, rawKlines);
+                } catch (supabaseError) {
+                    logger.warn(`[${symbol}] Failed to save kline data to Supabase:`, supabaseError.message);
+                }
+            }
+            
             logger.info(`[${symbol}] Latest kline data fetched and saved. Open: ${klineData.open}, Close: ${klineData.close}`);
 
             // 2. 计算技术指标
             logger.info(`[${symbol}] Calculating technical indicators...`);
             indicators = this.indicatorEngine.calculateAllIndicators(rawKlines);
             await this.databaseManager.saveIndicators(symbol, this.klineInterval, klineData.closeTime, indicators);
+            
+            // 同时保存到 Supabase 云数据库
+            if (this.supabaseManager.isReady()) {
+                try {
+                    await this.supabaseManager.saveIndicators(symbol, this.klineInterval, klineData.closeTime, indicators);
+                } catch (supabaseError) {
+                    logger.warn(`[${symbol}] Failed to save indicators to Supabase:`, supabaseError.message);
+                }
+            }
+            
             logger.info(`[${symbol}] Technical indicators calculated and saved. RSI: ${indicators.rsi ? indicators.rsi.slice(-1)[0] : 'N/A'}`);
 
             // 3. 调用DeepSeek AI分析
@@ -158,7 +189,7 @@ class TradingBot {
 
             // 5. 保存到数据库
             logger.info(`[${symbol}] Saving decision log to database...`);
-            await this.databaseManager.saveDecisionLog({
+            const decisionLogData = {
                 symbol,
                 interval: this.klineInterval,
                 timestamp: klineData.closeTime,
@@ -171,7 +202,19 @@ class TradingBot {
                 aiAnalysis: JSON.stringify(aiAnalysisResult), // 将AI分析结果转换为JSON字符串存储
                 decision,
                 decisionDetails
-            });
+            };
+            
+            await this.databaseManager.saveDecisionLog(decisionLogData);
+            
+            // 同时保存到 Supabase 云数据库
+            if (this.supabaseManager.isReady()) {
+                try {
+                    await this.supabaseManager.saveDecisionLog(decisionLogData);
+                } catch (supabaseError) {
+                    logger.warn(`[${symbol}] Failed to save decision log to Supabase:`, supabaseError.message);
+                }
+            }
+            
             logger.info(`[${symbol}] Decision log saved.`);
 
             // 6. 发送通知
@@ -191,6 +234,7 @@ class TradingBot {
             `;
             await this.notificationManager.sendEmail(notificationSubject, notificationBody);
             await this.notificationManager.sendNtfyNotification(notificationSubject, notificationBody, decision);
+            await this.notificationManager.sendWeComNotification(notificationSubject, notificationBody);
             logger.info(`[${symbol}] Notifications sent for decision: ${decision}`);
 
         } catch (error) {

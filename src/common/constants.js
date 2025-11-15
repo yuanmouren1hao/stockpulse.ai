@@ -55,8 +55,8 @@ const TECHNICAL_INDICATORS = {
 // 5. 系统配置常量
 // 包含了系统运行时的核心配置参数，如数据更新间隔、AI分析频率等。
 const SYSTEM_CONFIG = {
-  DATA_FETCH_INTERVAL_MS: 600000, // 数据采集和指标计算间隔，10分钟 = 10 * 60 * 1000 毫秒
-  AI_ANALYSIS_INTERVAL_MS: 600000, // AI分析和策略生成间隔，与数据采集间隔一致
+  DATA_FETCH_INTERVAL_MS: 60000, // 数据采集和指标计算间隔，1分钟 = 1 * 60 * 1000 毫秒
+  AI_ANALYSIS_INTERVAL_MS: 60000, // AI分析和策略生成间隔，与数据采集间隔一致
   DEFAULT_KLINE_LIMIT: 500, // 默认获取K线数据的数量
   MAX_KLINE_LIMIT: 1000, // 最大获取K线数据的数量
   DB_PATH: '/Users/goldenli/Documents/github/stockpulse.ai/db/trading.db', // SQLite数据库文件路径

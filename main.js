@@ -1,16 +1,103 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { TradingBot } = require('./src/backend/TradingBot.js');
+const { getConfig } = require('./src/backend/utils/config.js');
+const { logger } = require('./src/backend/utils/logger.js');
 
 // 保持对窗口对象的全局引用，如果不这样做，当 JavaScript 对象被垃圾回收时，窗口会被自动关闭
 let mainWindow;
 let tradingBot;
 
+// 重写console方法以捕获日志
+function setupLogCapture() {
+  const originalLog = console.log;
+  const originalError = console.error;
+  const originalWarn = console.warn;
+
+  console.log = function(...args) {
+    originalLog.apply(console, args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'INFO', 
+        message: args.join(' ') 
+      });
+    }
+  };
+
+  console.error = function(...args) {
+    originalError.apply(console, args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'ERROR', 
+        message: args.join(' ') 
+      });
+    }
+  };
+
+  console.warn = function(...args) {
+    originalWarn.apply(console, args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'WARN', 
+        message: args.join(' ') 
+      });
+    }
+  };
+}
+
+// 拦截logger的日志输出
+function setupLoggerCapture() {
+  const originalInfo = logger.info;
+  const originalError = logger.error;
+  const originalWarn = logger.warn;
+  const originalDebug = logger.debug;
+
+  logger.info = function(message, ...args) {
+    originalInfo.call(logger, message, ...args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'INFO', 
+        message: typeof message === 'string' ? message : JSON.stringify(message)
+      });
+    }
+  };
+
+  logger.error = function(message, ...args) {
+    originalError.call(logger, message, ...args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'ERROR', 
+        message: typeof message === 'string' ? message : JSON.stringify(message)
+      });
+    }
+  };
+
+  logger.warn = function(message, ...args) {
+    originalWarn.call(logger, message, ...args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'WARN', 
+        message: typeof message === 'string' ? message : JSON.stringify(message)
+      });
+    }
+  };
+
+  logger.debug = function(message, ...args) {
+    originalDebug.call(logger, message, ...args);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('bot-log', { 
+        level: 'DEBUG', 
+        message: typeof message === 'string' ? message : JSON.stringify(message)
+      });
+    }
+  };
+}
+
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 900,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -19,127 +106,13 @@ function createWindow() {
     icon: path.join(__dirname, 'assets/icon.png') // 如果有图标的话
   });
 
+  // 设置日志捕获
+  setupLogCapture();
+  setupLoggerCapture();
+
   // 加载应用的 index.html
-  // 目前先显示一个简单的页面
-  mainWindow.loadFile(path.join(__dirname, 'src/frontend/index.html')).catch(() => {
-    // 如果没有前端文件，创建一个简单的欢迎页面
-    mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>StockPulse.AI - 加密货币交易机器人</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-          }
-          .container { 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 40px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-          }
-          h1 { font-size: 2.5em; margin-bottom: 20px; }
-          .status { 
-            background: rgba(255,255,255,0.2); 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin: 20px 0;
-          }
-          button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 10px;
-          }
-          button:hover { background: #45a049; }
-          button:disabled { background: #cccccc; cursor: not-allowed; }
-          .stop { background: #f44336; }
-          .stop:hover { background: #da190b; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>🚀 StockPulse.AI</h1>
-          <h2>AI驱动的加密货币交易机器人</h2>
-          
-          <div class="status">
-            <h3>机器人状态</h3>
-            <p id="status">未启动</p>
-            <p id="details">点击下方按钮启动交易机器人</p>
-          </div>
-          
-          <div>
-            <button id="startBtn" onclick="startBot()">启动机器人</button>
-            <button id="stopBtn" onclick="stopBot()" disabled>停止机器人</button>
-            <button onclick="getStatus()">刷新状态</button>
-          </div>
-          
-          <div class="status">
-            <h3>功能特性</h3>
-            <ul style="text-align: left; display: inline-block;">
-              <li>🔄 实时价格监控 (Binance, OKX, Huobi)</li>
-              <li>🤖 AI智能分析 (DeepSeek)</li>
-              <li>📊 技术指标计算 (RSI, MACD, 布林带等)</li>
-              <li>📧 邮件和推送通知</li>
-              <li>💾 数据存储和历史记录</li>
-              <li>⚡ 自动化交易信号生成</li>
-            </ul>
-          </div>
-        </div>
-        
-        <script>
-          const { ipcRenderer } = require('electron');
-          
-          function startBot() {
-            ipcRenderer.send('start-bot');
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('status').textContent = '启动中...';
-          }
-          
-          function stopBot() {
-            ipcRenderer.send('stop-bot');
-            document.getElementById('stopBtn').disabled = true;
-            document.getElementById('status').textContent = '停止中...';
-          }
-          
-          function getStatus() {
-            ipcRenderer.send('get-status');
-          }
-          
-          // 监听来自主进程的消息
-          ipcRenderer.on('bot-status', (event, status) => {
-            document.getElementById('status').textContent = status.isRunning ? '运行中' : '已停止';
-            document.getElementById('details').textContent = status.isRunning 
-              ? \`监控交易对: \${status.monitoredSymbols?.join(', ') || '无'}\` 
-              : '机器人已停止';
-            document.getElementById('startBtn').disabled = status.isRunning;
-            document.getElementById('stopBtn').disabled = !status.isRunning;
-          });
-          
-          ipcRenderer.on('bot-error', (event, error) => {
-            document.getElementById('status').textContent = '错误';
-            document.getElementById('details').textContent = error;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-          });
-          
-          // 页面加载时获取状态
-          window.onload = () => getStatus();
-        </script>
-      </body>
-      </html>
-    `));
+  mainWindow.loadFile(path.join(__dirname, 'src/frontend/index.html')).catch((err) => {
+    console.error('无法加载前端页面:', err);
   });
 
   // 自动打开开发者工具（调试面板）
@@ -205,6 +178,24 @@ ipcMain.on('get-status', (event) => {
     event.reply('bot-status', status);
   } catch (error) {
     console.error('获取状态失败:', error);
+    event.reply('bot-error', error.message);
+  }
+});
+
+// 获取配置
+ipcMain.on('get-config', (event) => {
+  try {
+    const config = getConfig();
+    // 只发送通知相关的配置信息
+    const safeConfig = {
+      ENABLE_EMAIL_NOTIFICATION: config.ENABLE_EMAIL_NOTIFICATION,
+      ENABLE_NTFY_NOTIFICATION: config.ENABLE_NTFY_NOTIFICATION,
+      NOTIFICATION_EMAIL_TO: config.NOTIFICATION_EMAIL_TO,
+      NTFY_TOPIC: config.NTFY_TOPIC
+    };
+    event.reply('bot-config', safeConfig);
+  } catch (error) {
+    console.error('获取配置失败:', error);
     event.reply('bot-error', error.message);
   }
 });

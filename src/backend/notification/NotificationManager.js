@@ -3,7 +3,18 @@
  * @description 通知管理器
  */
 
-const nodemailer = require('nodemailer');
+// 尝试不同的导入方式以兼容不同版本的 nodemailer
+let nodemailer;
+try {
+    nodemailer = require('nodemailer');
+    // 如果是 ES 模块，可能需要访问 default
+    if (nodemailer.default) {
+        nodemailer = nodemailer.default;
+    }
+} catch (error) {
+    console.error('无法加载 nodemailer:', error);
+}
+
 const axios = require('axios');
 const { logger } = require('../utils/logger.js');
 const { getConfig } = require('../utils/config.js');
@@ -24,6 +35,12 @@ class NotificationManager {
      * 初始化邮件传输器
      */
     initializeEmailTransporter() {
+        // 检查 nodemailer 是否正确加载
+        if (!nodemailer || typeof nodemailer.createTransporter !== 'function') {
+            logger.warn('nodemailer 未正确加载，邮件通知功能将被禁用');
+            return;
+        }
+        
         if (this.config.SMTP_HOST && this.config.SMTP_USER && this.config.SMTP_PASS) {
             try {
                 this.emailTransporter = nodemailer.createTransporter({
@@ -50,6 +67,12 @@ class NotificationManager {
      * @param {string} text - 邮件内容
      */
     async sendEmail(subject, text) {
+        // 检查是否启用邮件通知
+        if (!this.config.ENABLE_EMAIL_NOTIFICATION) {
+            logger.debug('邮件通知已禁用，跳过邮件发送');
+            return;
+        }
+
         if (!this.emailTransporter) {
             logger.warn('邮件传输器未配置，跳过邮件发送');
             return;
@@ -78,6 +101,12 @@ class NotificationManager {
      * @param {string} priority - 优先级
      */
     async sendNtfyNotification(title, message, priority = 'default') {
+        // 检查是否启用ntfy通知
+        if (!this.config.ENABLE_NTFY_NOTIFICATION) {
+            logger.debug('ntfy通知已禁用，跳过推送发送');
+            return;
+        }
+
         if (!this.config.NTFY_TOPIC) {
             logger.warn('ntfy配置不完整，跳过推送发送');
             return;
@@ -86,9 +115,12 @@ class NotificationManager {
         try {
             const url = `${this.config.NTFY_BASE_URL}/${this.config.NTFY_TOPIC}`;
             
+            // 对包含中文的 Header 进行 Base64 编码
+            const encodedTitle = Buffer.from(title, 'utf-8').toString('base64');
+            
             await axios.post(url, message, {
                 headers: {
-                    'Title': title,
+                    'Title': `=?UTF-8?B?${encodedTitle}?=`,
                     'Priority': this.getPriorityLevel(priority),
                     'Tags': 'trading,crypto'
                 }
@@ -102,6 +134,41 @@ class NotificationManager {
     }
 
     /**
+     * 发送企业微信机器人通知
+     * @param {string} title - 通知标题
+     * @param {string} message - 通知内容
+     */
+    async sendWeComNotification(title, message) {
+        // 检查是否启用企业微信通知
+        if (!this.config.ENABLE_WECOM_NOTIFICATION) {
+            logger.debug('企业微信通知已禁用，跳过消息发送');
+            return;
+        }
+
+        if (!this.config.WECOM_WEBHOOK_URL) {
+            logger.warn('企业微信Webhook配置不完整，跳过消息发送');
+            return;
+        }
+
+        try {
+            // 企业微信支持 Markdown 格式
+            const content = `### ${title}\n${message}`;
+            
+            await axios.post(this.config.WECOM_WEBHOOK_URL, {
+                msgtype: 'markdown',
+                markdown: {
+                    content: content
+                }
+            });
+
+            logger.info(`企业微信消息发送成功: ${title}`);
+
+        } catch (error) {
+            logger.error('企业微信消息发送失败:', error.message);
+        }
+    }
+
+    /**
      * 发送系统通知
      * @param {string} title - 通知标题
      * @param {string} message - 通知内容
@@ -109,10 +176,11 @@ class NotificationManager {
     async sendSystemNotification(title, message) {
         logger.info(`系统通知: ${title} - ${message}`);
         
-        // 同时发送邮件和推送
+        // 同时发送邮件、推送和企业微信
         await Promise.all([
             this.sendEmail(`[系统通知] ${title}`, message),
-            this.sendNtfyNotification(title, message, 'high')
+            this.sendNtfyNotification(title, message, 'high'),
+            this.sendWeComNotification(title, message)
         ]);
     }
 

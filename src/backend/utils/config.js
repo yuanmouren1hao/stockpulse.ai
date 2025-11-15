@@ -36,8 +36,12 @@ if (fs.existsSync(envPath)) {
  * @property {string} SMTP_USER - 邮件SMTP认证用户名。
  * @property {string} SMTP_PASS - 邮件SMTP认证密码。
  * @property {string} NOTIFICATION_EMAIL_TO - 接收通知邮件的邮箱地址。
+ * @property {boolean} ENABLE_EMAIL_NOTIFICATION - 是否启用邮件通知功能。
  * @property {string} NTFY_BASE_URL - ntfy服务的基URL。
  * @property {string} NTFY_TOPIC - ntfy推送的主题。
+ * @property {boolean} ENABLE_NTFY_NOTIFICATION - 是否启用ntfy推送通知功能。
+ * @property {string} WECOM_WEBHOOK_URL - 企业微信机器人Webhook地址。
+ * @property {boolean} ENABLE_WECOM_NOTIFICATION - 是否启用企业微信通知功能。
  * @property {string} DATABASE_PATH - SQLite数据库文件的绝对路径。
  * @property {string} LOG_PATH - 日志文件存储目录的绝对路径。
  * @property {number} DATA_COLLECTION_INTERVAL_MINUTES - 数据采集和分析的间隔时间（分钟）。
@@ -62,8 +66,12 @@ const defaultConfig = {
     SMTP_USER: 'user@example.com',
     SMTP_PASS: 'password',
     NOTIFICATION_EMAIL_TO: 'your_email@example.com',
+    ENABLE_EMAIL_NOTIFICATION: false,
     NTFY_BASE_URL: 'https://ntfy.sh',
     NTFY_TOPIC: 'my_crypto_trading_alerts',
+    ENABLE_NTFY_NOTIFICATION: false,
+    WECOM_WEBHOOK_URL: '',
+    ENABLE_WECOM_NOTIFICATION: true,
     DATABASE_PATH: path.join(rootDir, 'data', 'trading.db'),
     LOG_PATH: path.join(rootDir, 'data', 'logs'),
     DATA_COLLECTION_INTERVAL_MINUTES: 10, // 默认10分钟
@@ -89,8 +97,12 @@ const config = {
     SMTP_USER: process.env.SMTP_USER || defaultConfig.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS || defaultConfig.SMTP_PASS,
     NOTIFICATION_EMAIL_TO: process.env.NOTIFICATION_EMAIL_TO || defaultConfig.NOTIFICATION_EMAIL_TO,
+    ENABLE_EMAIL_NOTIFICATION: process.env.ENABLE_EMAIL_NOTIFICATION === 'true',
     NTFY_BASE_URL: process.env.NTFY_BASE_URL || defaultConfig.NTFY_BASE_URL,
     NTFY_TOPIC: process.env.NTFY_TOPIC || defaultConfig.NTFY_TOPIC,
+    ENABLE_NTFY_NOTIFICATION: process.env.ENABLE_NTFY_NOTIFICATION === 'true',
+    WECOM_WEBHOOK_URL: process.env.WECOM_WEBHOOK_URL || defaultConfig.WECOM_WEBHOOK_URL,
+    ENABLE_WECOM_NOTIFICATION: process.env.ENABLE_WECOM_NOTIFICATION === 'true',
     DATABASE_PATH: process.env.DATABASE_PATH || defaultConfig.DATABASE_PATH,
     LOG_PATH: process.env.LOG_PATH || defaultConfig.LOG_PATH,
     DATA_COLLECTION_INTERVAL_MINUTES: parseInt(process.env.DATA_COLLECTION_INTERVAL_MINUTES, 10) || defaultConfig.DATA_COLLECTION_INTERVAL_MINUTES,

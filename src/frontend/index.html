@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockPulse.AI - 加密货币交易机器人</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-card h3 {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .status-running {
+            color: #4caf50;
+        }
+
+        .status-stopped {
+            color: #f44336;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 20px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            background: #45a049;
+        }
+
+        .btn-stop {
+            background: #f44336;
+            border-color: #f44336;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: #da190b;
+        }
+
+        .log-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .log-header h2 {
+            font-size: 1.2em;
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-controls button {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .log-container {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 0;
+            max-height: 100%;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .log-entry.info {
+            border-left: 3px solid #2196f3;
+        }
+
+        .log-entry.error {
+            border-left: 3px solid #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        .log-entry.warn {
+            border-left: 3px solid #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .log-entry.debug {
+            border-left: 3px solid #9e9e9e;
+            opacity: 0.7;
+        }
+
+        .log-timestamp {
+            color: #9e9e9e;
+            margin-right: 10px;
+        }
+
+        .log-level {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .log-level.INFO {
+            color: #2196f3;
+        }
+
+        .log-level.ERROR {
+            color: #f44336;
+        }
+
+        .log-level.WARN {
+            color: #ff9800;
+        }
+
+        .log-level.DEBUG {
+            color: #9e9e9e;
+        }
+
+        .log-message {
+            color: #fff;
+        }
+
+        .log-json {
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 3px solid #4caf50;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .log-json .json-key {
+            color: #9cdcfe;
+        }
+
+        .log-json .json-string {
+            color: #ce9178;
+        }
+
+        .log-json .json-number {
+            color: #b5cea8;
+        }
+
+        .log-json .json-boolean {
+            color: #569cd6;
+        }
+
+        .log-json .json-null {
+            color: #808080;
+        }
+
+        .symbols-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .symbol-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+        }
+
+        .empty-log {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.5;
+        }
+
+        .notification-status {
+            margin-top: 15px;
+            font-size: 0.85em;
+        }
+
+        .notification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.enabled {
+            background: #4caf50;
+        }
+
+        .status-indicator.disabled {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <h1>🚀 StockPulse.AI</h1>
+            <p class="subtitle">AI驱动的加密货币交易机器人</p>
+
+            <!-- 状态卡片 -->
+            <div class="status-card">
+                <h3>运行状态</h3>
+                <div id="status" class="status-value status-stopped">已停止</div>
+            </div>
+
+            <div class="status-card">
+                <h3>监控交易对</h3>
+                <div id="symbols" class="symbols-list">
+                    <span class="symbol-tag">-</span>
+                </div>
+            </div>
+
+            <div class="status-card">
+                <h3>活跃任务</h3>
+                <div id="activeJobs" class="status-value">0</div>
+            </div>
+
+            <div class="status-card">
+                <h3>K线周期</h3>
+                <div id="interval" class="status-value">-</div>
+            </div>
+
+            <!-- 通知状态 -->
+            <div class="status-card">
+                <h3>通知配置</h3>
+                <div class="notification-status">
+                    <div class="notification-item">
+                        <span>
+                            <span id="emailIndicator" class="status-indicator disabled"></span>
+                            邮件通知
+                        </span>
+                        <span id="emailStatus">禁用</span>
+                    </div>
+                    <div class="notification-item">
+                        <span>
+                            <span id="ntfyIndicator" class="status-indicator disabled"></span>
+                            推送通知
+                        </span>
+                        <span id="ntfyStatus">禁用</span>
+                    </div>
+                    <div class="notification-item">
+                        <span>
+                            <span id="wecomIndicator" class="status-indicator disabled"></span>
+                            企业微信
+                        </span>
+                        <span id="wecomStatus">禁用</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按钮组 -->
+            <div class="button-group">
+                <button id="startBtn" class="btn-start" onclick="startBot()">启动</button>
+                <button id="stopBtn" class="btn-stop" onclick="stopBot()" disabled>停止</button>
+            </div>
+            <div class="button-group">
+                <button onclick="getStatus()">刷新状态</button>
+                <button onclick="getConfig()">获取配置</button>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="log-section">
+                <div class="log-header">
+                    <h2>📋 运行日志</h2>
+                    <div class="log-controls">
+                        <button onclick="clearLogs()">清空日志</button>
+                        <button onclick="toggleAutoScroll()">
+                            <span id="autoScrollText">自动滚动: 开</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="logContainer" class="log-container">
+                    <div class="empty-log">等待日志输出...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let autoScroll = true;
+        let logs = [];
+
+        // 启动机器人
+        function startBot() {
+            ipcRenderer.send('start-bot');
+            document.getElementById('startBtn').disabled = true;
+            addLog('INFO', '正在启动机器人...');
+        }
+
+        // 停止机器人
+        function stopBot() {
+            ipcRenderer.send('stop-bot');
+            document.getElementById('stopBtn').disabled = true;
+            addLog('INFO', '正在停止机器人...');
+        }
+
+        // 获取状态
+        function getStatus() {
+            ipcRenderer.send('get-status');
+        }
+
+        // 获取配置
+        function getConfig() {
+            ipcRenderer.send('get-config');
+        }
+
+        // 清空日志
+        function clearLogs() {
+            logs = [];
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<div class="empty-log">日志已清空</div>';
+        }
+
+        // 切换自动滚动
+        function toggleAutoScroll() {
+            autoScroll = !autoScroll;
+            document.getElementById('autoScrollText').textContent = 
+                `自动滚动: ${autoScroll ? '开' : '关'}`;
+        }
+
+        // 添加日志条目
+        function addLog(level, message) {
+            const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const logEntry = { timestamp, level, message };
+            logs.push(logEntry);
+
+            const logContainer = document.getElementById('logContainer');
+            
+            // 如果是第一条日志，清空提示信息
+            if (logContainer.querySelector('.empty-log')) {
+                logContainer.innerHTML = '';
+            }
+
+            const logElement = document.createElement('div');
+            logElement.className = `log-entry ${level.toLowerCase()}`;
+            
+            // 尝试检测并格式化 JSON 内容
+            const { formattedMessage, hasJson } = formatLogMessage(message);
+            
+            logElement.innerHTML = `
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-level ${level}">[${level}]</span>
+                <span class="log-message">${formattedMessage}</span>
+            `;
+            
+            logContainer.appendChild(logElement);
+
+            // 限制日志数量
+            if (logs.length > 500) {
+                logs.shift();
+                logContainer.removeChild(logContainer.firstChild);
+            }
+
+            // 自动滚动到底部
+            if (autoScroll) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        // 格式化日志消息，美化 JSON 显示
+        function formatLogMessage(message) {
+            let hasJson = false;
+            let formattedMessage = escapeHtml(message);
+
+            // 尝试检测 JSON 对象或数组
+            const jsonRegex = /(\{[\s\S]*?\}|\[[\s\S]*?\])/g;
+            const matches = message.match(jsonRegex);
+
+            if (matches) {
+                matches.forEach(match => {
+                    try {
+                        const parsed = JSON.parse(match);
+                        const prettified = JSON.stringify(parsed, null, 2);
+                        const highlighted = syntaxHighlightJson(prettified);
+                        formattedMessage = formattedMessage.replace(
+                            escapeHtml(match),
+                            `<br><div class="log-json">${highlighted}</div>`
+                        );
+                        hasJson = true;
+                    } catch (e) {
+                        // 不是有效的 JSON，保持原样
+                    }
+                });
+            }
+
+            return { formattedMessage, hasJson };
+        }
+
+        // JSON 语法高亮
+        function syntaxHighlightJson(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 更新状态显示
+        function updateStatus(status) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = status.isRunning ? '运行中' : '已停止';
+            statusElement.className = status.isRunning ? 'status-value status-running' : 'status-value status-stopped';
+
+            // 更新监控交易对
+            const symbolsElement = document.getElementById('symbols');
+            if (status.monitoredSymbols && status.monitoredSymbols.length > 0) {
+                symbolsElement.innerHTML = status.monitoredSymbols
+                    .map(s => `<span class="symbol-tag">${s}</span>`)
+                    .join('');
+            } else {
+                symbolsElement.innerHTML = '<span class="symbol-tag">-</span>';
+            }
+
+            // 更新活跃任务数
+            document.getElementById('activeJobs').textContent = status.activeScheduledJobs || 0;
+
+            // 更新K线周期
+            document.getElementById('interval').textContent = status.klineInterval || '-';
+
+            // 更新按钮状态
+            document.getElementById('startBtn').disabled = status.isRunning;
+            document.getElementById('stopBtn').disabled = !status.isRunning;
+        }
+
+        // 更新通知配置显示
+        function updateConfig(config) {
+            // 更新邮件通知状态
+            const emailEnabled = config.ENABLE_EMAIL_NOTIFICATION === true;
+            document.getElementById('emailIndicator').className = 
+                emailEnabled ? 'status-indicator enabled' : 'status-indicator disabled';
+            document.getElementById('emailStatus').textContent = emailEnabled ? '启用' : '禁用';
+
+            // 更新推送通知状态
+            const ntfyEnabled = config.ENABLE_NTFY_NOTIFICATION === true;
+            document.getElementById('ntfyIndicator').className = 
+                ntfyEnabled ? 'status-indicator enabled' : 'status-indicator disabled';
+            document.getElementById('ntfyStatus').textContent = ntfyEnabled ? '启用' : '禁用';
+
+            // 更新企业微信通知状态
+            const wecomEnabled = config.ENABLE_WECOM_NOTIFICATION === true;
+            document.getElementById('wecomIndicator').className = 
+                wecomEnabled ? 'status-indicator enabled' : 'status-indicator disabled';
+            document.getElementById('wecomStatus').textContent = wecomEnabled ? '启用' : '禁用';
+
+            addLog('INFO', `通知配置已更新 - 邮件: ${emailEnabled ? '启用' : '禁用'}, 推送: ${ntfyEnabled ? '启用' : '禁用'}, 企业微信: ${wecomEnabled ? '启用' : '禁用'}`);
+        }
+
+        // 监听来自主进程的消息
+        ipcRenderer.on('bot-status', (event, status) => {
+            updateStatus(status);
+            addLog('INFO', `状态更新: ${status.isRunning ? '运行中' : '已停止'}`);
+        });
+
+        ipcRenderer.on('bot-config', (event, config) => {
+            updateConfig(config);
+        });
+
+        ipcRenderer.on('bot-error', (event, error) => {
+            updateStatus({ isRunning: false });
+            addLog('ERROR', `错误: ${error}`);
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        });
+
+        ipcRenderer.on('bot-log', (event, { level, message }) => {
+            addLog(level, message);
+        });
+
+        // 页面加载时获取初始状态和配置
+        window.onload = () => {
+            getStatus();
+            getConfig();
+            addLog('INFO', 'StockPulse.AI 界面已加载');
+        };
+    </script>
+</body>
+</html>

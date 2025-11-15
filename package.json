@@ -59,12 +59,15 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
     "axios": "^1.6.8",
     "better-sqlite3": "^9.4.3",
     "ccxt": "^4.2.90",
     "dotenv": "^16.4.5",
+    "https-proxy-agent": "^7.0.6",
     "node-schedule": "^2.1.1",
     "nodemailer": "^6.9.12",
+    "socks-proxy-agent": "^8.0.5",
     "technicalindicators": "^3.1.0",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^5.0.0"
@@ -115,11 +118,16 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.ico"
@@ -128,11 +136,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "icon": "build/icon.icns",
@@ -142,11 +156,15 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.png",
