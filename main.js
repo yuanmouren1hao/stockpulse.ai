@@ -1,12 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { TradingBot } = require('./src/backend/TradingBot.js');
+const { StockMonitor } = require('./src/backend/StockMonitor.js');
 const { getConfig } = require('./src/backend/utils/config.js');
 const { logger } = require('./src/backend/utils/logger.js');
 
 // 保持对窗口对象的全局引用，如果不这样做，当 JavaScript 对象被垃圾回收时，窗口会被自动关闭
 let mainWindow;
 let tradingBot;
+let stockMonitor;
 
 // 重写console方法以捕获日志
 function setupLogCapture() {
@@ -190,12 +192,85 @@ ipcMain.on('get-config', (event) => {
     const safeConfig = {
       ENABLE_EMAIL_NOTIFICATION: config.ENABLE_EMAIL_NOTIFICATION,
       ENABLE_NTFY_NOTIFICATION: config.ENABLE_NTFY_NOTIFICATION,
+      ENABLE_WECOM_NOTIFICATION: config.ENABLE_WECOM_NOTIFICATION,
       NOTIFICATION_EMAIL_TO: config.NOTIFICATION_EMAIL_TO,
-      NTFY_TOPIC: config.NTFY_TOPIC
+      NTFY_TOPIC: config.NTFY_TOPIC,
+      WECOM_WEBHOOK_URL: config.WECOM_WEBHOOK_URL ? '已配置' : '未配置'
     };
     event.reply('bot-config', safeConfig);
   } catch (error) {
     console.error('获取配置失败:', error);
     event.reply('bot-error', error.message);
+  }
+});
+
+// ============================================================================
+// 股票监控相关 IPC 处理
+// ============================================================================
+
+// 启动股票监控
+ipcMain.on('start-stock-monitor', async (event) => {
+  try {
+    if (!stockMonitor) {
+      stockMonitor = new StockMonitor(mainWindow); // 传入主窗口引用
+    } else {
+      stockMonitor.setMainWindow(mainWindow); // 设置主窗口引用
+    }
+    await stockMonitor.start();
+    event.reply('stock-monitor-status', stockMonitor.getStatus());
+  } catch (error) {
+    console.error('启动股票监控失败:', error);
+    event.reply('stock-monitor-error', error.message);
+  }
+});
+
+// 停止股票监控
+ipcMain.on('stop-stock-monitor', (event) => {
+  try {
+    if (stockMonitor) {
+      stockMonitor.stop();
+    }
+    event.reply('stock-monitor-status', stockMonitor ? stockMonitor.getStatus() : { isRunning: false });
+  } catch (error) {
+    console.error('停止股票监控失败:', error);
+    event.reply('stock-monitor-error', error.message);
+  }
+});
+
+// 获取股票监控状态
+ipcMain.on('get-stock-monitor-status', (event) => {
+  try {
+    const status = stockMonitor ? stockMonitor.getStatus() : { isRunning: false, monitoredStocks: [] };
+    event.reply('stock-monitor-status', status);
+  } catch (error) {
+    console.error('获取股票监控状态失败:', error);
+    event.reply('stock-monitor-error', error.message);
+  }
+});
+
+// 添加监控股票
+ipcMain.on('add-stock', (event, stock) => {
+  try {
+    if (!stockMonitor) {
+      stockMonitor = new StockMonitor();
+    }
+    stockMonitor.addStock(stock);
+    event.reply('stock-monitor-status', stockMonitor.getStatus());
+  } catch (error) {
+    console.error('添加监控股票失败:', error);
+    event.reply('stock-monitor-error', error.message);
+  }
+});
+
+// 移除监控股票
+ipcMain.on('remove-stock', (event, symbol) => {
+  try {
+    if (stockMonitor) {
+      stockMonitor.removeStock(symbol);
+      event.reply('stock-monitor-status', stockMonitor.getStatus());
+    }
+  } catch (error) {
+    console.error('移除监控股票失败:', error);
+    event.reply('stock-monitor-error', error.message);
   }
 });

@@ -45,6 +45,10 @@ if (fs.existsSync(envPath)) {
  * @property {string} DATABASE_PATH - SQLite数据库文件的绝对路径。
  * @property {string} LOG_PATH - 日志文件存储目录的绝对路径。
  * @property {number} DATA_COLLECTION_INTERVAL_MINUTES - 数据采集和分析的间隔时间（分钟）。
+ * @property {string} TUSHARE_TOKEN - Tushare API Token。
+ * @property {string} STOCK_MONITOR_CN_TIME - A股监控时间（Cron表达式）。
+ * @property {string} STOCK_MONITOR_HK_TIME - 港股监控时间（Cron表达式）。
+ * @property {string} STOCK_MONITOR_US_TIME - 美股监控时间（Cron表达式）。
  */
 
 /**
@@ -75,6 +79,10 @@ const defaultConfig = {
     DATABASE_PATH: path.join(rootDir, 'data', 'trading.db'),
     LOG_PATH: path.join(rootDir, 'data', 'logs'),
     DATA_COLLECTION_INTERVAL_MINUTES: 10, // 默认10分钟
+    TUSHARE_TOKEN: '',
+    STOCK_MONITOR_CN_TIME: '30 15 * * 1-5', // A股收盘后15:30
+    STOCK_MONITOR_HK_TIME: '30 16 * * 1-5', // 港股收盘后16:30
+    STOCK_MONITOR_US_TIME: '0 5 * * 2-6', // 美股收盘后（北京时间次日05:00）
 };
 
 /**
@@ -106,6 +114,10 @@ const config = {
     DATABASE_PATH: process.env.DATABASE_PATH || defaultConfig.DATABASE_PATH,
     LOG_PATH: process.env.LOG_PATH || defaultConfig.LOG_PATH,
     DATA_COLLECTION_INTERVAL_MINUTES: parseInt(process.env.DATA_COLLECTION_INTERVAL_MINUTES, 10) || defaultConfig.DATA_COLLECTION_INTERVAL_MINUTES,
+    TUSHARE_TOKEN: process.env.TUSHARE_TOKEN || defaultConfig.TUSHARE_TOKEN,
+    STOCK_MONITOR_CN_TIME: process.env.STOCK_MONITOR_CN_TIME || defaultConfig.STOCK_MONITOR_CN_TIME,
+    STOCK_MONITOR_HK_TIME: process.env.STOCK_MONITOR_HK_TIME || defaultConfig.STOCK_MONITOR_HK_TIME,
+    STOCK_MONITOR_US_TIME: process.env.STOCK_MONITOR_US_TIME || defaultConfig.STOCK_MONITOR_US_TIME,
 };
 
 /**

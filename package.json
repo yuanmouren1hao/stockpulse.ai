@@ -16,10 +16,11 @@
     "dev": "electron . --inspect=5858",
     "build": "electron-builder",
     "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac", 
+    "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:stock": "node test-stock-monitor.js",
     "lint": "eslint src/",
     "clean": "rimraf dist build node_modules/.cache"
   },
@@ -61,7 +62,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
     "axios": "^1.6.8",
-    "better-sqlite3": "^9.4.3",
     "ccxt": "^4.2.90",
     "dotenv": "^16.4.5",
     "https-proxy-agent": "^7.0.6",

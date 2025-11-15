@@ -5,7 +5,7 @@ const { ExchangeManager } = require('./api/ExchangeManager.js');
 const { IndicatorEngine } = require('./indicators/IndicatorEngine.js');
 const { DeepSeekClient } = require('./ai/DeepSeekClient.js');
 const { StrategyEngine } = require('./strategy/StrategyEngine.js');
-const { DatabaseManager } = require('./db/DatabaseManager.js');
+// const { DatabaseManager } = require('./db/DatabaseManager.js'); // SQLite已移除
 const { SupabaseManager } = require('./db/SupabaseManager.js');
 const { NotificationManager } = require('./notification/NotificationManager.js');
 const { logger } = require('./utils/logger.js');
@@ -24,7 +24,7 @@ class TradingBot {
         this.indicatorEngine = new IndicatorEngine();
         this.deepSeekClient = new DeepSeekClient();
         this.strategyEngine = new StrategyEngine();
-        this.databaseManager = new DatabaseManager();
+        // this.databaseManager = new DatabaseManager(); // SQLite已移除
         this.supabaseManager = new SupabaseManager(); // Supabase 云数据库
         this.notificationManager = new NotificationManager();
 
@@ -48,16 +48,16 @@ class TradingBot {
 
         logger.info('Starting TradingBot...');
         try {
-            // 初始化本地 SQLite 数据库
-            await this.databaseManager.initialize();
-            logger.info('SQLite Database initialized successfully.');
+            // 初始化本地 SQLite 数据库 (已移除)
+            // await this.databaseManager.initialize();
+            // logger.info('SQLite Database initialized successfully.');
 
             // 初始化 Supabase 云数据库
             try {
                 await this.supabaseManager.initialize();
                 logger.info('Supabase initialized successfully.');
             } catch (supabaseError) {
-                logger.warn('Supabase initialization failed, continuing with local SQLite only:', supabaseError.message);
+                logger.warn('Supabase initialization failed:', supabaseError.message);
             }
 
             // 为每个交易对调度一个独立的定时任务
@@ -98,7 +98,7 @@ class TradingBot {
             logger.info(`Cancelled scheduled job for symbol: ${symbol}`);
         }
         this.scheduledJobs = {};
-        this.databaseManager.close(); // 关闭数据库连接
+        // this.databaseManager.close(); // SQLite已移除
         this.isBotRunning = false;
         logger.info('TradingBot stopped successfully.');
         this.notificationManager.sendSystemNotification('TradingBot Stopped', 'TradingBot has been stopped.');
@@ -145,9 +145,9 @@ class TradingBot {
                 return;
             }
             klineData = rawKlines[rawKlines.length - 1]; // 获取最新一根K线
-            await this.databaseManager.saveKlineData(symbol, this.klineInterval, rawKlines); // 批量保存K线数据到本地
+            // await this.databaseManager.saveKlineData(symbol, this.klineInterval, rawKlines); // SQLite已移除
             
-            // 同时保存到 Supabase 云数据库
+            // 保存到 Supabase 云数据库
             if (this.supabaseManager.isReady()) {
                 try {
                     await this.supabaseManager.saveKlineData(symbol, this.klineInterval, rawKlines);
@@ -161,9 +161,9 @@ class TradingBot {
             // 2. 计算技术指标
             logger.info(`[${symbol}] Calculating technical indicators...`);
             indicators = this.indicatorEngine.calculateAllIndicators(rawKlines);
-            await this.databaseManager.saveIndicators(symbol, this.klineInterval, klineData.closeTime, indicators);
+            // await this.databaseManager.saveIndicators(symbol, this.klineInterval, klineData.closeTime, indicators); // SQLite已移除
             
-            // 同时保存到 Supabase 云数据库
+            // 保存到 Supabase 云数据库
             if (this.supabaseManager.isReady()) {
                 try {
                     await this.supabaseManager.saveIndicators(symbol, this.klineInterval, klineData.closeTime, indicators);
@@ -204,9 +204,9 @@ class TradingBot {
                 decisionDetails
             };
             
-            await this.databaseManager.saveDecisionLog(decisionLogData);
+            // await this.databaseManager.saveDecisionLog(decisionLogData); // SQLite已移除
             
-            // 同时保存到 Supabase 云数据库
+            // 保存到 Supabase 云数据库
             if (this.supabaseManager.isReady()) {
                 try {
                     await this.supabaseManager.saveDecisionLog(decisionLogData);

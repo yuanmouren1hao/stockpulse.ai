@@ -1,4 +1,4 @@
-# 🚀 StockPulse.AI - AI驱动的加密货币交易机器人
+# 🚀 StockPulse.AI - AI驱动的加密货币和股票交易分析系统
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 ![Electron](https://img.shields.io/badge/electron-29.1.4-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
-*一个功能强大的加密货币交易分析系统，集成AI智能分析、实时数据监控和自动化交易信号生成*
+*一个功能强大的加密货币和股票交易分析系统，集成AI智能分析、实时数据监控和自动化交易信号生成*
 
 </div>
 
@@ -30,6 +30,18 @@
 - **DeepSeek AI集成**: 基于最新的AI技术进行市场分析
 - **智能决策生成**: 自动生成5级交易信号（强烈买入/买入/中性/卖出/强烈卖出）
 - **上下文感知分析**: 结合技术指标和市场数据进行综合分析
+
+### 📈 股票监控（新功能！）
+- **多市场支持**: A股、港股、美股全覆盖
+- **Tushare数据源**: 稳定可靠的股票数据接口
+- **定时监控**: 根据不同市场交易时间自动监控
+- **完整分析**: 技术指标计算 + AI分析 + 交易建议
+- **默认监控股票**:
+  - 港股: 腾讯控股(00700.HK)、小米集团(01810.HK)、阿里巴巴(09988.HK)
+  - 美股: BTCS
+  - A股: 贵州茅台(600519.SH)
+
+> 📖 详细使用指南: [STOCK_MONITOR_GUIDE.md](./STOCK_MONITOR_GUIDE.md)
 
 ### 📊 技术指标引擎
 - **丰富的技术指标**: RSI、MACD、KDJ、布林带、ATR等
@@ -84,8 +96,10 @@ StockPulse.AI/
 │   └── 实时数据展示
 │
 ├── 🧠 核心引擎
-│   ├── 📈 交易机器人 (TradingBot)
+│   ├── 📈 交易机器人 (TradingBot) - 加密货币
+│   ├── 📊 股票监控器 (StockMonitor) - 股票市场
 │   ├── 🔗 交易所管理器 (ExchangeManager)
+│   ├── 💹 Tushare客户端 (TushareClient)
 │   ├── 🤖 AI分析客户端 (DeepSeekClient)
 │   ├── 📊 指标计算引擎 (IndicatorEngine)
 │   ├── 🎯 策略生成引擎 (StrategyEngine)
@@ -94,7 +108,7 @@ StockPulse.AI/
 ├── 💾 数据层
 │   ├── 🗄️ 本地 SQLite 数据库
 │   ├── ☁️ Supabase 云数据库
-│   ├── 📋 K线数据存储
+│   ├── 📋 K线数据存储（加密货币+股票）
 │   ├── 📈 技术指标存储
 │   └── 📝 决策日志存储
 │
@@ -117,6 +131,7 @@ StockPulse.AI/
 - **DeepSeek AI** - 智能市场分析
 - **Technical Indicators** - 技术指标计算库
 - **CCXT** - 统一交易所API接口
+- **Tushare** - 股票数据接口
 
 ### 通知服务
 - **Nodemailer** - 邮件发送服务
@@ -175,7 +190,10 @@ nano .env
 # DeepSeek AI API
 DEEPSEEK_API_KEY="your_deepseek_api_key"
 
-# 至少配置一个交易所
+# Tushare 股票数据（新增！）
+TUSHARE_TOKEN="your_tushare_token"
+
+# 至少配置一个交易所（用于加密货币）
 BINANCE_API_KEY="your_binance_api_key"
 BINANCE_SECRET_KEY="your_binance_secret_key"
 
@@ -197,6 +215,32 @@ npm run dev
 ```bash
 # 构建生产版本
 npm run build
+```
+
+## 🚀 快速测试
+
+### 测试股票监控功能
+
+```bash
+# 运行股票监控测试
+npm run test:stock
+```
+
+这将立即执行一次完整的股票监控流程，包括：
+- 获取所有监控股票的数据
+- 计算技术指标
+- AI分析生成交易建议
+- 保存到数据库
+- 发送通知（如果启用）
+
+### 查看测试结果
+
+```bash
+# 查看应用日志
+tail -f logs/application-$(date +%Y-%m-%d).log
+
+# 查看错误日志
+tail -f logs/error-$(date +%Y-%m-%d).log
 ```
 
 ## 🔧 配置说明

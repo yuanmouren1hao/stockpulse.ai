@@ -79,6 +79,11 @@ class NotificationManager {
         }
 
         try {
+            logger.info('========== 开始发送邮件通知 ==========');
+            logger.info(`收件人: ${this.config.NOTIFICATION_EMAIL_TO}`);
+            logger.info(`主题: ${subject}`);
+            logger.info(`内容: ${text.substring(0, 200)}...`);
+
             const mailOptions = {
                 from: this.config.SMTP_USER,
                 to: this.config.NOTIFICATION_EMAIL_TO,
@@ -86,11 +91,17 @@ class NotificationManager {
                 text: text
             };
 
-            await this.emailTransporter.sendMail(mailOptions);
-            logger.info(`邮件发送成功: ${subject}`);
+            const info = await this.emailTransporter.sendMail(mailOptions);
+            
+            logger.info(`✅ 邮件发送成功`);
+            logger.info(`消息ID: ${info.messageId}`);
+            logger.info(`响应: ${info.response}`);
+            logger.info('======================================');
 
         } catch (error) {
-            logger.error('邮件发送失败:', error);
+            logger.error('❌ 邮件发送失败:');
+            logger.error(`错误消息: ${error.message}`);
+            logger.error(`错误详情: ${JSON.stringify(error, null, 2)}`);
         }
     }
 
@@ -113,23 +124,39 @@ class NotificationManager {
         }
 
         try {
+            logger.info('========== 开始发送 ntfy 推送通知 ==========');
             const url = `${this.config.NTFY_BASE_URL}/${this.config.NTFY_TOPIC}`;
+            logger.info(`推送URL: ${url}`);
+            logger.info(`标题: ${title}`);
+            logger.info(`内容: ${message.substring(0, 200)}...`);
+            logger.info(`优先级: ${priority} -> ${this.getPriorityLevel(priority)}`);
             
             // 对包含中文的 Header 进行 Base64 编码
             const encodedTitle = Buffer.from(title, 'utf-8').toString('base64');
             
-            await axios.post(url, message, {
-                headers: {
-                    'Title': `=?UTF-8?B?${encodedTitle}?=`,
-                    'Priority': this.getPriorityLevel(priority),
-                    'Tags': 'trading,crypto'
-                }
-            });
+            const headers = {
+                'Title': `=?UTF-8?B?${encodedTitle}?=`,
+                'Priority': this.getPriorityLevel(priority),
+                'Tags': 'trading,crypto'
+            };
 
-            logger.info(`ntfy推送发送成功: ${title}`);
+            logger.info(`请求头: ${JSON.stringify(headers, null, 2)}`);
+
+            const response = await axios.post(url, message, { headers });
+
+            logger.info(`✅ ntfy推送发送成功`);
+            logger.info(`响应状态: ${response.status} ${response.statusText}`);
+            logger.info(`响应数据: ${JSON.stringify(response.data, null, 2)}`);
+            logger.info('==========================================');
 
         } catch (error) {
-            logger.error('ntfy推送发送失败:', error);
+            logger.error('❌ ntfy推送发送失败:');
+            logger.error(`错误消息: ${error.message}`);
+            if (error.response) {
+                logger.error(`响应状态: ${error.response.status}`);
+                logger.error(`响应数据: ${JSON.stringify(error.response.data, null, 2)}`);
+            }
+            logger.error(`错误详情: ${JSON.stringify(error, null, 2)}`);
         }
     }
 
@@ -151,20 +178,38 @@ class NotificationManager {
         }
 
         try {
+            logger.info('========== 开始发送企业微信通知 ==========');
+            logger.info(`Webhook URL: ${this.config.WECOM_WEBHOOK_URL}`);
+            logger.info(`标题: ${title}`);
+            logger.info(`内容: ${message.substring(0, 200)}...`);
+
             // 企业微信支持 Markdown 格式
             const content = `### ${title}\n${message}`;
             
-            await axios.post(this.config.WECOM_WEBHOOK_URL, {
+            const requestBody = {
                 msgtype: 'markdown',
                 markdown: {
                     content: content
                 }
-            });
+            };
 
-            logger.info(`企业微信消息发送成功: ${title}`);
+            logger.info(`请求体: ${JSON.stringify(requestBody, null, 2)}`);
+
+            const response = await axios.post(this.config.WECOM_WEBHOOK_URL, requestBody);
+
+            logger.info(`✅ 企业微信消息发送成功`);
+            logger.info(`响应状态: ${response.status} ${response.statusText}`);
+            logger.info(`响应数据: ${JSON.stringify(response.data, null, 2)}`);
+            logger.info('=========================================');
 
         } catch (error) {
-            logger.error('企业微信消息发送失败:', error.message);
+            logger.error('❌ 企业微信消息发送失败:');
+            logger.error(`错误消息: ${error.message}`);
+            if (error.response) {
+                logger.error(`响应状态: ${error.response.status}`);
+                logger.error(`响应数据: ${JSON.stringify(error.response.data, null, 2)}`);
+            }
+            logger.error(`错误详情: ${JSON.stringify(error, null, 2)}`);
         }
     }
 

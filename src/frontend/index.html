@@ -341,12 +341,12 @@
         <!-- 侧边栏 -->
         <div class="sidebar">
             <h1>🚀 StockPulse.AI</h1>
-            <p class="subtitle">AI驱动的加密货币交易机器人</p>
+            <p class="subtitle">AI驱动的加密货币和股票交易分析系统</p>
 
-            <!-- 状态卡片 -->
+            <!-- 加密货币监控状态 -->
             <div class="status-card">
-                <h3>运行状态</h3>
-                <div id="status" class="status-value status-stopped">已停止</div>
+                <h3>💰 加密货币监控</h3>
+                <div id="cryptoStatus" class="status-value status-stopped">已停止</div>
             </div>
 
             <div class="status-card">
@@ -356,14 +356,22 @@
                 </div>
             </div>
 
+            <!-- 股票监控状态 -->
             <div class="status-card">
-                <h3>活跃任务</h3>
-                <div id="activeJobs" class="status-value">0</div>
+                <h3>📈 股票监控</h3>
+                <div id="stockStatus" class="status-value status-stopped">已停止</div>
             </div>
 
             <div class="status-card">
-                <h3>K线周期</h3>
-                <div id="interval" class="status-value">-</div>
+                <h3>监控股票</h3>
+                <div id="stocks" class="symbols-list">
+                    <span class="symbol-tag">-</span>
+                </div>
+            </div>
+
+            <div class="status-card">
+                <h3>活跃任务</h3>
+                <div id="activeJobs" class="status-value">0</div>
             </div>
 
             <!-- 通知状态 -->
@@ -396,8 +404,12 @@
 
             <!-- 按钮组 -->
             <div class="button-group">
-                <button id="startBtn" class="btn-start" onclick="startBot()">启动</button>
-                <button id="stopBtn" class="btn-stop" onclick="stopBot()" disabled>停止</button>
+                <button id="startCryptoBtn" class="btn-start" onclick="startCryptoBot()">启动加密</button>
+                <button id="stopCryptoBtn" class="btn-stop" onclick="stopCryptoBot()" disabled>停止加密</button>
+            </div>
+            <div class="button-group">
+                <button id="startStockBtn" class="btn-start" onclick="startStockMonitor()">启动股票</button>
+                <button id="stopStockBtn" class="btn-stop" onclick="stopStockMonitor()" disabled>停止股票</button>
             </div>
             <div class="button-group">
                 <button onclick="getStatus()">刷新状态</button>
@@ -430,23 +442,38 @@
         let autoScroll = true;
         let logs = [];
 
-        // 启动机器人
-        function startBot() {
+        // 启动加密货币机器人
+        function startCryptoBot() {
             ipcRenderer.send('start-bot');
-            document.getElementById('startBtn').disabled = true;
-            addLog('INFO', '正在启动机器人...');
+            document.getElementById('startCryptoBtn').disabled = true;
+            addLog('INFO', '正在启动加密货币机器人...');
         }
 
-        // 停止机器人
-        function stopBot() {
+        // 停止加密货币机器人
+        function stopCryptoBot() {
             ipcRenderer.send('stop-bot');
-            document.getElementById('stopBtn').disabled = true;
-            addLog('INFO', '正在停止机器人...');
+            document.getElementById('stopCryptoBtn').disabled = true;
+            addLog('INFO', '正在停止加密货币机器人...');
+        }
+
+        // 启动股票监控
+        function startStockMonitor() {
+            ipcRenderer.send('start-stock-monitor');
+            document.getElementById('startStockBtn').disabled = true;
+            addLog('INFO', '正在启动股票监控...');
+        }
+
+        // 停止股票监控
+        function stopStockMonitor() {
+            ipcRenderer.send('stop-stock-monitor');
+            document.getElementById('stopStockBtn').disabled = true;
+            addLog('INFO', '正在停止股票监控...');
         }
 
         // 获取状态
         function getStatus() {
             ipcRenderer.send('get-status');
+            ipcRenderer.send('get-stock-monitor-status');
         }
 
         // 获取配置
@@ -563,9 +590,9 @@
             return div.innerHTML;
         }
 
-        // 更新状态显示
-        function updateStatus(status) {
-            const statusElement = document.getElementById('status');
+        // 更新加密货币状态显示
+        function updateCryptoStatus(status) {
+            const statusElement = document.getElementById('cryptoStatus');
             statusElement.textContent = status.isRunning ? '运行中' : '已停止';
             statusElement.className = status.isRunning ? 'status-value status-running' : 'status-value status-stopped';
 
@@ -582,12 +609,30 @@
             // 更新活跃任务数
             document.getElementById('activeJobs').textContent = status.activeScheduledJobs || 0;
 
-            // 更新K线周期
-            document.getElementById('interval').textContent = status.klineInterval || '-';
+            // 更新按钮状态
+            document.getElementById('startCryptoBtn').disabled = status.isRunning;
+            document.getElementById('stopCryptoBtn').disabled = !status.isRunning;
+        }
+
+        // 更新股票监控状态显示
+        function updateStockStatus(status) {
+            const statusElement = document.getElementById('stockStatus');
+            statusElement.textContent = status.isRunning ? '运行中' : '已停止';
+            statusElement.className = status.isRunning ? 'status-value status-running' : 'status-value status-stopped';
+
+            // 更新监控股票
+            const stocksElement = document.getElementById('stocks');
+            if (status.monitoredStocks && status.monitoredStocks.length > 0) {
+                stocksElement.innerHTML = status.monitoredStocks
+                    .map(s => `<span class="symbol-tag">${s.name || s.symbol}</span>`)
+                    .join('');
+            } else {
+                stocksElement.innerHTML = '<span class="symbol-tag">-</span>';
+            }
 
             // 更新按钮状态
-            document.getElementById('startBtn').disabled = status.isRunning;
-            document.getElementById('stopBtn').disabled = !status.isRunning;
+            document.getElementById('startStockBtn').disabled = status.isRunning;
+            document.getElementById('stopStockBtn').disabled = !status.isRunning;
         }
 
         // 更新通知配置显示
@@ -615,8 +660,8 @@
 
         // 监听来自主进程的消息
         ipcRenderer.on('bot-status', (event, status) => {
-            updateStatus(status);
-            addLog('INFO', `状态更新: ${status.isRunning ? '运行中' : '已停止'}`);
+            updateCryptoStatus(status);
+            addLog('INFO', `加密货币状态更新: ${status.isRunning ? '运行中' : '已停止'}`);
         });
 
         ipcRenderer.on('bot-config', (event, config) => {
@@ -624,10 +669,24 @@
         });
 
         ipcRenderer.on('bot-error', (event, error) => {
-            updateStatus({ isRunning: false });
+            updateCryptoStatus({ isRunning: false });
             addLog('ERROR', `错误: ${error}`);
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('startCryptoBtn').disabled = false;
+            document.getElementById('stopCryptoBtn').disabled = true;
+        });
+
+        // 监听股票监控状态
+        ipcRenderer.on('stock-monitor-status', (event, status) => {
+            updateStockStatus(status);
+            addLog('INFO', `股票监控状态更新: ${status.isRunning ? '运行中' : '已停止'}`);
+        });
+
+        // 监听股票监控错误
+        ipcRenderer.on('stock-monitor-error', (event, error) => {
+            updateStockStatus({ isRunning: false });
+            addLog('ERROR', `股票监控错误: ${error}`);
+            document.getElementById('startStockBtn').disabled = false;
+            document.getElementById('stopStockBtn').disabled = true;
         });
 
         ipcRenderer.on('bot-log', (event, { level, message }) => {

@@ -73,14 +73,28 @@ class DeepSeekClient {
         }
 
         try {
-            const response = await axios.post(`${this.baseURL}/chat/completions`, {
+            // 构建请求体
+            const requestBody = {
                 model: 'deepseek-chat',
                 messages: [
                     { role: 'user', content: prompt }
                 ],
                 temperature: 0.7,
                 max_tokens: 200
-            }, {
+            };
+
+            // 打印请求信息
+            logger.info('========== DeepSeek API 请求开始 ==========');
+            logger.info(`请求URL: ${this.baseURL}/chat/completions`);
+            logger.info(`请求方法: POST`);
+            logger.info(`请求头: Authorization: Bearer ${this.apiKey.substring(0, 10)}...`);
+            logger.info('请求体:');
+            logger.info(JSON.stringify(requestBody, null, 2));
+            logger.info('===========================================');
+
+            const startTime = Date.now();
+            
+            const response = await axios.post(`${this.baseURL}/chat/completions`, requestBody, {
                 headers: {
                     'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json'
@@ -88,18 +102,55 @@ class DeepSeekClient {
                 timeout: 30000
             });
 
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+
+            // 打印响应信息
+            logger.info('========== DeepSeek API 响应开始 ==========');
+            logger.info(`响应状态: ${response.status} ${response.statusText}`);
+            logger.info(`响应耗时: ${duration}ms`);
+            logger.info('响应头:');
+            logger.info(JSON.stringify(response.headers, null, 2));
+            logger.info('响应体:');
+            logger.info(JSON.stringify(response.data, null, 2));
+            logger.info('===========================================');
+
             const content = response.data.choices[0].message.content;
             const decision = this.parseDecision(content);
             
-            return {
+            const analysisResult = {
                 decision,
                 confidence: 0.8,
                 reasoning: content,
                 summary: content.substring(0, 100) + '...'
             };
 
+            logger.info('========== AI 分析结果 ==========');
+            logger.info(`决策: ${decision}`);
+            logger.info(`置信度: ${analysisResult.confidence}`);
+            logger.info(`推理摘要: ${analysisResult.summary}`);
+            logger.info('================================');
+
+            return analysisResult;
+
         } catch (error) {
-            logger.error('DeepSeek AI 分析失败:', error.message);
+            // 打印错误详情
+            logger.error('========== DeepSeek API 请求失败 ==========');
+            logger.error(`错误类型: ${error.name}`);
+            logger.error(`错误消息: ${error.message}`);
+            
+            if (error.response) {
+                logger.error(`响应状态: ${error.response.status}`);
+                logger.error(`响应数据: ${JSON.stringify(error.response.data, null, 2)}`);
+            } else if (error.request) {
+                logger.error('未收到响应，请求详情:');
+                logger.error(JSON.stringify(error.request, null, 2));
+            }
+            
+            logger.error('堆栈跟踪:');
+            logger.error(error.stack);
+            logger.error('==========================================');
+
             return {
                 decision: '中性',
                 confidence: 0.5,
